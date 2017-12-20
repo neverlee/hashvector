@@ -110,6 +110,74 @@ int HIncrByFVCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return REDISMODULE_OK;
 }
 
+int HSetIVCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc < 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+    RedisModule_AutoMemory(ctx);
+
+    // open the key and make sure it is indeed a Hash and not empty
+    RedisModuleKey *key =
+        RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+
+    if ((RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) &&
+            (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_HASH)) {
+        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+        return REDISMODULE_ERR;
+    }
+
+    size_t lvec = argc-3;
+    long long vec[lvec];
+    int i;
+    for (i=3; i<argc; i++) {
+        if (REDISMODULE_OK != RedisModule_StringToLongLong(argv[i], vec+i-3)) {
+            return RedisModule_WrongArity(ctx);
+        }
+    }
+
+    RedisModuleString *newval;
+    newval = RedisModule_CreateString(ctx, (char*)vec, lvec*8);
+    RedisModule_HashSet(key, REDISMODULE_HASH_NONE, argv[2], newval, NULL);
+    RedisModule_FreeString(ctx, newval);
+
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
+    return REDISMODULE_OK;
+}
+
+int HSetFVCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc < 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+    RedisModule_AutoMemory(ctx);
+
+    // open the key and make sure it is indeed a Hash and not empty
+    RedisModuleKey *key =
+        RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+
+    if ((RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) &&
+            (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_HASH)) {
+        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+        return REDISMODULE_ERR;
+    }
+
+    size_t lvec = argc-3;
+    double vec[lvec];
+    int i;
+    for (i=3; i<argc; i++) {
+        if (REDISMODULE_OK != RedisModule_StringToDouble(argv[i], vec+i-3)) {
+            return RedisModule_WrongArity(ctx);
+        }
+    }
+
+    RedisModuleString *newval;
+    newval = RedisModule_CreateString(ctx, (char*)vec, lvec*8);
+    RedisModule_HashSet(key, REDISMODULE_HASH_NONE, argv[2], newval, NULL);
+
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
+    return REDISMODULE_OK;
+}
+
+
 int HGetIVCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
@@ -196,6 +264,16 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx, "hincrbyfv", HIncrByFVCommand,
+                "write fast deny-oom", 1, 1,
+                -1) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
+
+    if (RedisModule_CreateCommand(ctx, "hsetiv", HSetIVCommand,
+                "write fast deny-oom", 1, 1,
+                -1) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
+
+    if (RedisModule_CreateCommand(ctx, "hsetfv", HSetFVCommand,
                 "write fast deny-oom", 1, 1,
                 -1) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
