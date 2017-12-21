@@ -12,8 +12,11 @@ Added six new api for hashmap:
 The int64 vector and float64 vector is not compatible, so you should not use `***iv` and `***fv` api at the same item.
 
 ## example
+Compile this module, just run `make`. You can get the hashvector.so.
 ```
 # redis-cli
+127.0.0.1:6379> module load /path/to/hashvector.so
+OK
 127.0.0.1:6379> hincrbyiv grade andy 10 10 1
 OK
 127.0.0.1:6379> hgetiv grade andy
